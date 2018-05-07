@@ -1,37 +1,41 @@
+import java.io.IOException;
 import java.util.Scanner;
 
+import Exceptions.DuplicateContactException;
+import Exceptions.EmptyBookException;
+import Exceptions.InvalidPhoneNumberException;
 import cbook.ContactBook;
 import cbook.ContactBookClass;
 import cbook.Iterator;
 
 public class Main {
 	//Constantes que definem os comandos
-	 public static final String ADD_CONTACT    = "AC";
-	 public static final String REMOVE_CONTACT = "RC";
-	 public static final String GET_PHONE      = "GP";
-	 public static final String GET_EMAIL      = "GE";
-	 public static final String SET_PHONE      = "SP";
-	 public static final String SET_EMAIL      = "SE";
-	 public static final String LIST_CONTACTS  = "LC";
-	 public static final String QUIT           = "Q";
-	 
+	 private static final String ADD_CONTACT    = "AC";
+	 private static final String REMOVE_CONTACT = "RC";
+	 private static final String GET_PHONE      = "GP";
+	 private static final String GET_EMAIL      = "GE";
+	 private static final String SET_PHONE      = "SP";
+	 private static final String SET_EMAIL      = "SE";
+	 private static final String LIST_CONTACTS  = "LC";
+	 private static final String QUIT           = "Q";
+
 	 //Constantes que definem as mensagens para o utilizador
-	 public static final String CONTACT_EXISTS = "Contact already exists.";
-	 public static final String NAME_NOT_EXIST = "Contact does not exist.";
-	 public static final String CONTACT_ADDED = "Contact added.";
-	 public static final String CONTACT_REMOVED = "Contact removed.";
-	 public static final String CONTACT_UPDATED = "Contact updated.";
-	 public static final String BOOK_EMPTY = "Contact book empty.";
-	
-	 public static void main(String[] args) {   
-		 Scanner in = new Scanner(System.in);
+	 private static final String CONTACT_EXISTS = "Contact already exists.";
+	 private static final String NAME_NOT_EXIST = "Contact does not exist.";
+	 private static final String CONTACT_ADDED = "Contact added.";
+	 private static final String CONTACT_REMOVED = "Contact removed.";
+	 private static final String CONTACT_UPDATED = "Contact updated.";
+	 private static final String BOOK_EMPTY = "Contact book empty.";
+
+	 public static void main(String[] args) {
+	 	Scanner in = new Scanner(System.in);
 		 ContactBook cBook = new ContactBookClass();
 		 String comm = getCommand(in);
 	  
 		 while (!comm.equals(QUIT)){
 			 switch (comm) {
 			 case ADD_CONTACT: 
-				 addContact(in,cBook);
+				 processAddContact(in,cBook);
 				 break;
 			 case REMOVE_CONTACT:
 				 deleteContact(in,cBook);
@@ -49,7 +53,7 @@ public class Main {
 				 setEmail(in,cBook);
 				 break;
 			 case LIST_CONTACTS:
-				 listAllContacts(cBook);
+				 processListAllContacts(cBook);
 				 break;
 			 default:
 				 System.out.println("ERRO");
@@ -68,23 +72,39 @@ public class Main {
 		return input;
 	}
 
-	private static void addContact(Scanner in, ContactBook cBook) {
-		String name, email;
-		int phone;
-
-		name = in.nextLine();
-		phone = in.nextInt(); in.nextLine();
-		email = in.nextLine();
-		if (!cBook.hasContact(name)) {
-			cBook.addContact(name, phone, email);
+	private static void processAddContact(Scanner in, ContactBook cBook) {
+		try {
+			addContact(cBook,in);
 			System.out.println(CONTACT_ADDED);
+		} catch (InvalidPhoneNumberException e){
+			System.out.println("Not a valid phone number.");
 		}
-		else System.out.println(CONTACT_EXISTS);
+		catch (DuplicateContactException e){
+			System.out.println(CONTACT_EXISTS);
+		}
+	}
+
+	private static void addContact(ContactBook cBook,Scanner in)throws InvalidPhoneNumberException,
+																		DuplicateContactException {
+		String name = in.nextLine();
+		String phone = in.nextLine();
+		String email = in.nextLine();
+		int phoneNumber;
+		try{
+			phoneNumber = Integer.parseInt(phone);
+			if(cBook.hasContact(name))
+				throw  new DuplicateContactException();
+			cBook.addContact(name,phoneNumber,email);
+		}catch(NumberFormatException e) {
+			throw new InvalidPhoneNumberException();
+		}
 	}
 	
 	private static void deleteContact(Scanner in, ContactBook cBook) {
 		String name;
 		name = in.nextLine();
+
+
 		if (cBook.hasContact(name)) {
 			cBook.deleteContact(name);
 			System.out.println(CONTACT_REMOVED);
@@ -134,12 +154,20 @@ public class Main {
 		else System.out.println(NAME_NOT_EXIST);
 	}
 
-	private static void listAllContacts(ContactBook cBook) {
-		if (cBook.getNumberOfContacts() != 0) {
-			Iterator it = cBook.listContacts();
-			while(it.hasNext()) 
-				System.out.println(it.next());
+	private static void processListAllContacts(ContactBook cBook) {
+		try{
+			listAllContacts(cBook);
+		} catch (EmptyBookException e){
+			System.out.println(BOOK_EMPTY);
 		}
-		else System.out.println(BOOK_EMPTY);
+	}
+
+	private static void listAllContacts(ContactBook cBook)throws EmptyBookException{
+		if (cBook.getNumberOfContacts() == 0)
+			throw new EmptyBookException();
+
+		Iterator it = cBook.listContacts();
+		while(it.hasNext())
+			System.out.println(it.next());
 	}
 }
