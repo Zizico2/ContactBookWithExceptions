@@ -1,13 +1,19 @@
-import java.io.IOException;
+import java.rmi.activation.UnknownObjectException;
 import java.util.Scanner;
 
 import Exceptions.DuplicateContactException;
 import Exceptions.EmptyBookException;
 import Exceptions.InvalidPhoneNumberException;
+import Exceptions.UnknownContactException;
 import cbook.ContactBook;
 import cbook.ContactBookClass;
 import cbook.Iterator;
 
+/**
+ * @author Tiago Guerreiro 53649
+ * @author Bernardo Borda d'Agua 53648
+ *
+ */
 public class Main {
 	//Constantes que definem os comandos
 	 private static final String ADD_CONTACT    = "AC";
@@ -26,6 +32,7 @@ public class Main {
 	 private static final String CONTACT_REMOVED = "Contact removed.";
 	 private static final String CONTACT_UPDATED = "Contact updated.";
 	 private static final String BOOK_EMPTY = "Contact book empty.";
+	 private static final String INVALID_NUMBER = "Not a valid phone number.";
 
 	 public static void main(String[] args) {
 	 	Scanner in = new Scanner(System.in);
@@ -38,19 +45,19 @@ public class Main {
 				 processAddContact(in,cBook);
 				 break;
 			 case REMOVE_CONTACT:
-				 deleteContact(in,cBook);
+				 processDeleteContact(in,cBook);
 				 break;
 			 case GET_PHONE:
-				 getPhone(in,cBook);
+				 processGetPhone(in,cBook);
 				 break;
 			 case GET_EMAIL: 
-				 getEmail(in,cBook);
+				 processGetEmail(in,cBook);
 				 break;
 			 case SET_PHONE:
-				 setPhone(in,cBook);
+				 processSetPhone(in,cBook);
 				 break;
 			 case SET_EMAIL:
-				 setEmail(in,cBook);
+				 processSetEmail(in,cBook);
 				 break;
 			 case LIST_CONTACTS:
 				 processListAllContacts(cBook);
@@ -77,15 +84,14 @@ public class Main {
 			addContact(cBook,in);
 			System.out.println(CONTACT_ADDED);
 		} catch (InvalidPhoneNumberException e){
-			System.out.println("Not a valid phone number.");
+			System.out.println(INVALID_NUMBER);
 		}
 		catch (DuplicateContactException e){
 			System.out.println(CONTACT_EXISTS);
 		}
 	}
 
-	private static void addContact(ContactBook cBook,Scanner in)throws InvalidPhoneNumberException,
-																		DuplicateContactException {
+	private static void addContact(ContactBook cBook,Scanner in)throws InvalidPhoneNumberException, DuplicateContactException {
 		String name = in.nextLine();
 		String phone = in.nextLine();
 		String email = in.nextLine();
@@ -100,58 +106,99 @@ public class Main {
 		}
 	}
 	
-	private static void deleteContact(Scanner in, ContactBook cBook) {
+	private static void processDeleteContact(Scanner in, ContactBook cBook) {
 		String name;
 		name = in.nextLine();
-
-
-		if (cBook.hasContact(name)) {
-			cBook.deleteContact(name);
+		try {
+			deleteContact(name, cBook);
 			System.out.println(CONTACT_REMOVED);
+		} catch(UnknownContactException e){
+			System.out.println(NAME_NOT_EXIST);
 		}
-		else System.out.println(NAME_NOT_EXIST);
 	}
-	
-	private static void getPhone(Scanner in, ContactBook cBook) {
+
+	private static void deleteContact(String name,ContactBook cBook) throws UnknownContactException {
+		if (!cBook.hasContact(name)) throw new UnknownContactException();
+		cBook.deleteContact(name);
+	}
+
+	private static void processGetPhone(Scanner in, ContactBook cBook) {
 		String name;
 		name = in.nextLine();
-		if (cBook.hasContact(name)) {
-			System.out.println(cBook.getPhone(name));
+
+		try{
+			getPhone(name,cBook);
+		} catch (UnknownContactException e) {
+			 System.out.println(NAME_NOT_EXIST);
 		}
-		else System.out.println(NAME_NOT_EXIST);
+	}
+
+	private static void getPhone(String name, ContactBook cBook) throws UnknownContactException {
+		if (!cBook.hasContact(name))
+			throw new UnknownContactException();
+		System.out.println(cBook.getPhone(name));
 	}
 	
-	private static void getEmail(Scanner in, ContactBook cBook) {
+	private static void processGetEmail(Scanner in, ContactBook cBook) {
 		String name;
 		name = in.nextLine();
-		if (cBook.hasContact(name)) {
-			System.out.println(cBook.getEmail(name));
+		try {
+			getEmail(name,cBook);
+		} catch (UnknownContactException e){
+			System.out.println(NAME_NOT_EXIST);
 		}
-		else System.out.println(NAME_NOT_EXIST);
+	}
+
+	private static void getEmail(String name,ContactBook cBook) throws UnknownContactException{
+		if (!cBook.hasContact(name))
+			throw new UnknownContactException();
+		System.out.println(cBook.getEmail(name));
 	}
 	
+	private static void processSetPhone(Scanner in, ContactBook cBook) {
+		try{
+			setPhone(in,cBook);
+		} catch (InvalidPhoneNumberException e){
+			System.out.println(INVALID_NUMBER);
+		}
+		catch (UnknownContactException e){
+			System.out.println(NAME_NOT_EXIST);
+		}
+	}
+
 	private static void setPhone(Scanner in, ContactBook cBook) {
 		String name;
-		int phone;
+		String phone;
 		name = in.nextLine();
-		phone = in.nextInt(); in.nextLine();
-		if (cBook.hasContact(name)) {
-			cBook.setPhone(name,phone);
+		phone = in.nextLine();
+		try {
+			int phoneNumber = Integer.parseInt(phone);
+			if (!cBook.hasContact(name))
+				throw new UnknownContactException();
+			cBook.setPhone(name,phoneNumber);
 			System.out.println(CONTACT_UPDATED);
+		} catch (NumberFormatException e){
+			throw new InvalidPhoneNumberException();
 		}
-		else System.out.println(NAME_NOT_EXIST);
 	}
-	
-	private static void setEmail(Scanner in, ContactBook cBook) {
+
+	private static void processSetEmail(Scanner in, ContactBook cBook) {
 		String name;
 		String email;
 		name = in.nextLine();
 		email = in.nextLine();
-		if (cBook.hasContact(name)) {
-			cBook.setEmail(name,email);
-			System.out.println(CONTACT_UPDATED);
+		try{
+			setEmail(name,email,cBook);
+		} catch (UnknownContactException e){
+			System.out.println(NAME_NOT_EXIST);
 		}
-		else System.out.println(NAME_NOT_EXIST);
+	}
+
+	private static void setEmail(String name, String email,ContactBook cBook) throws UnknownContactException {
+		if (!cBook.hasContact(name))
+			throw new UnknownContactException();
+		cBook.setEmail(name,email);
+		System.out.println(CONTACT_UPDATED);
 	}
 
 	private static void processListAllContacts(ContactBook cBook) {
